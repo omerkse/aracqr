@@ -2,16 +2,14 @@ const express = require("express");
 const qr = require("qrcode");
 const fs = require("fs");
 const path = require("path");
+
 const app = express();
 
-// Middleware ayarları
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set("view engine", "ejs");
-
-// JSON dosyasının yolu
-const araclarFilePath = path.join(__dirname, "araclar.json");
+app.set("views", path.join(__dirname, "../views"));
 
 // JSON dosyası kontrolü
 try {
