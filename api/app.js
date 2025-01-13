@@ -1,49 +1,33 @@
 const express = require("express");
 const qr = require("qrcode");
-const fs = require("fs");
-const path = require("path");
-
 const app = express();
 
+// Middleware ayarları
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "../views"));
 
-// JSON dosyası kontrolü
-try {
-  if (!fs.existsSync(araclarFilePath)) {
-    fs.writeFileSync(araclarFilePath, "[]", "utf8");
-  }
-} catch (error) {
-  console.error("Dosya oluşturma hatası:", error);
-}
+// Vercel için in-memory storage (geçici çözüm)
+let araclar = [];
 
-// Verileri JSON'dan okuma
-const getAraclar = () => {
-  try {
-    if (fs.existsSync(araclarFilePath)) {
-      const data = fs.readFileSync(araclarFilePath, "utf8");
-      return JSON.parse(data);
-    }
-    return [];
-  } catch (error) {
-    console.error("Veri okuma hatası:", error);
-    return [];
-  }
+// Plaka kontrolü
+const findAracByPlaka = (plaka) => {
+  return araclar.find(
+    (arac) =>
+      arac.plaka.toLowerCase().replace(/\s/g, "") ===
+      plaka.toLowerCase().replace(/\s/g, "")
+  );
 };
 
 // Veri kaydetme
 const saveArac = (arac) => {
   try {
-    let araclar = getAraclar();
     const yeniArac = {
       id: Date.now().toString(),
       ...arac,
     };
     araclar.push(yeniArac);
-    fs.writeFileSync(araclarFilePath, JSON.stringify(araclar, null, 2), "utf8");
     return yeniArac;
   } catch (error) {
     console.error("Veri kaydetme hatası:", error);
@@ -59,10 +43,21 @@ app.get("/", (req, res) => {
 // QR kod oluşturma
 app.post("/qrolustur", async (req, res) => {
   try {
-    const arac = saveArac(req.body);
-    const bilgiURL = `${req.protocol}://${req.get("host")}/bilgi/${arac.id}`;
-    const qrKod = await qr.toDataURL(bilgiURL);
-    res.render("qrkod", { qrKod, mesaj: "QR Kod başarıyla oluşturuldu." });
+    // Plaka kontrolü
+    const mevcutArac = findAracByPlaka(req.body.plaka);
+
+    if (mevcutArac) {
+      const bilgiURL = `${req.protocol}://${req.get("host")}/bilgi/${
+        mevcutArac.id
+      }`;
+      const qrKod = await qr.toDataURL(bilgiURL);
+      res.render("qrkod", { qrKod, mesaj: "Bu plaka zaten kayıtlı!" });
+    } else {
+      const arac = saveArac(req.body);
+      const bilgiURL = `${req.protocol}://${req.get("host")}/bilgi/${arac.id}`;
+      const qrKod = await qr.toDataURL(bilgiURL);
+      res.render("qrkod", { qrKod, mesaj: "QR kod başarıyla oluşturuldu." });
+    }
   } catch (err) {
     console.error("QR kod oluşturma hatası:", err);
     res.status(500).send(`Bir hata oluştu: ${err.message}`);
@@ -72,7 +67,6 @@ app.post("/qrolustur", async (req, res) => {
 // Bilgi görüntüleme
 app.get("/bilgi/:id", (req, res) => {
   try {
-    const araclar = getAraclar();
     const arac = araclar.find((a) => a.id === req.params.id);
 
     if (!arac) {
@@ -86,11 +80,63 @@ app.get("/bilgi/:id", (req, res) => {
   }
 });
 
-// Port ayarı
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server ${port} portunda çalışıyor`);
+// Güncelleme işlemleri
+const updateArac = (id, yeniBilgiler) => {
+  try {
+    const index = araclar.findIndex((a) => a.id === id);
+
+    if (index !== -1) {
+      araclar[index] = { ...araclar[index], ...yeniBilgiler };
+      return araclar[index];
+    }
+    return null;
+  } catch (error) {
+    console.error("Güncelleme hatası:", error);
+    throw error;
+  }
+};
+
+// Güncelleme formu sayfası
+app.get("/guncelle/:id", (req, res) => {
+  try {
+    const arac = araclar.find((a) => a.id === req.params.id);
+
+    if (!arac) {
+      return res.status(404).send("Araç bulunamadı");
+    }
+
+    res.render("guncelle", { arac });
+  } catch (error) {
+    res.status(500).send("Bir hata oluştu");
+  }
 });
 
-// Vercel için export
+// Güncelleme işlemi
+app.post("/guncelle/:id", async (req, res) => {
+  try {
+    const guncelArac = updateArac(req.params.id, req.body);
+
+    if (!guncelArac) {
+      return res.status(404).send("Araç bulunamadı");
+    }
+
+    const bilgiURL = `${req.protocol}://${req.get("host")}/bilgi/${
+      guncelArac.id
+    }`;
+    const qrKod = await qr.toDataURL(bilgiURL);
+    res.render("qrkod", { qrKod, mesaj: "Bilgiler başarıyla güncellendi." });
+  } catch (error) {
+    res.status(500).send("Güncelleme sırasında bir hata oluştu");
+  }
+});
+
+// Vercel için module.exports
 module.exports = app;
+
+// Eğer doğrudan çalıştırılıyorsa (development)
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server http://localhost:${PORT} adresinde çalışıyor`);
+  });
+}
