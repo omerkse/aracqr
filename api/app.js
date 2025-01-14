@@ -1,12 +1,18 @@
 const express = require("express");
 const qr = require("qrcode");
+const path = require("path"); // path modülünü kullanacağız
 const app = express();
 
 // Middleware ayarları
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
+
+// Statik dosyalar için doğru yolu belirtme
+app.use(express.static(path.join(__dirname, "public")));
+
+// View engine olarak ejs ayarla ve views dizinini belirt
 app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "..", "views")); // views dizini, api'nin bir üst seviyesinde
 
 // Vercel için in-memory storage (geçici çözüm)
 let araclar = [];
