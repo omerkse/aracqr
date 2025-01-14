@@ -42,9 +42,14 @@
             </div>
             <div class="d-grid gap-2">
               <a href="/" class="btn btn-primary">Yeni QR Kod Oluştur</a>
-              <button onclick="window.print()" class="btn btn-success">
-                Yazdır
-              </button>
+              <!-- QR kodu indirmek için yeni buton -->
+              <a
+                href="<%= qrKod %>"
+                download="qr_kod.png"
+                class="btn btn-success"
+              >
+                QR Kodunu İndir
+              </a>
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@ const express = require("express");
 const qr = require("qrcode");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 
 const app = express();
 
@@ -15,22 +16,26 @@ app.use(
   express.static(path.join(__dirname, "..", "public/images/car-logos"))
 );
 
-// Vercel için Geçici dosya dizini ve dosya yolu
-const tmpDirPath = "/tmp"; // Vercel'de yazılabilir alan
-const tmpFilePath = path.join(tmpDirPath, "araclar.json"); // Dosya yolu
+// Geçici dosya yolunu doğru şekilde almak için
+const getDosyaYolu = () => {
+  const tempDir = os.tmpdir(); // Her ortamda geçici dizini alır
+  return path.join(tempDir, "araclar.json"); // araclar.json dosyasının yolunu döndürür
+};
 
 // JSON dosyasından araçları yükle
 const loadAraclar = () => {
-  if (fs.existsSync(tmpFilePath)) {
-    const data = fs.readFileSync(tmpFilePath, "utf8");
+  const dosyaYolu = getDosyaYolu();
+  if (fs.existsSync(dosyaYolu)) {
+    const data = fs.readFileSync(dosyaYolu, "utf8");
     return JSON.parse(data);
   }
-  return []; // Dosya yoksa boş array döndür
+  return [];
 };
 
 // JSON dosyasına araçları kaydet
 const saveAraclar = (data) => {
-  fs.writeFileSync(tmpFilePath, JSON.stringify(data, null, 4), "utf8");
+  const dosyaYolu = getDosyaYolu();
+  fs.writeFileSync(dosyaYolu, JSON.stringify(data, null, 4), "utf8");
 };
 
 // Araç listesi
