@@ -1,21 +1,38 @@
 const express = require("express");
 const qr = require("qrcode");
-const path = require("path"); // path modülünü kullanacağız
+const path = require("path");
+const fs = require("fs");
+
 const app = express();
 
-// Middleware ayarları
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Statik dosyalar için doğru yolu belirtme
-app.use(express.static(path.join(__dirname, "public")));
-
-// View engine olarak ejs ayarla ve views dizinini belirt
+app.use(express.static(path.join(__dirname, "..", "public")));
 app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "..", "views")); // views dizini, api'nin bir üst seviyesinde
+app.set("views", path.join(__dirname, "..", "views"));
+app.use(
+  "/car-logos",
+  express.static(path.join(__dirname, "..", "public/images/car-logos"))
+);
 
-// Vercel için in-memory storage (geçici çözüm)
-let araclar = [];
+// JSON dosyasından araçları yükle
+const loadAraclar = () => {
+  const dosyaYolu = path.join(__dirname, "araclar.json");
+  if (fs.existsSync(dosyaYolu)) {
+    const data = fs.readFileSync(dosyaYolu, "utf8");
+    return JSON.parse(data);
+  }
+  return [];
+};
+
+// JSON dosyasına araçları kaydet
+const saveAraclar = (data) => {
+  const dosyaYolu = path.join(__dirname, "araclar.json");
+  fs.writeFileSync(dosyaYolu, JSON.stringify(data, null, 4), "utf8");
+};
+
+// Araç listesi
+let araclar = loadAraclar();
 
 // Plaka kontrolü
 const findAracByPlaka = (plaka) => {
@@ -28,17 +45,14 @@ const findAracByPlaka = (plaka) => {
 
 // Veri kaydetme
 const saveArac = (arac) => {
-  try {
-    const yeniArac = {
-      id: Date.now().toString(),
-      ...arac,
-    };
-    araclar.push(yeniArac);
-    return yeniArac;
-  } catch (error) {
-    console.error("Veri kaydetme hatası:", error);
-    throw error;
-  }
+  const yeniArac = {
+    id: Date.now().toString(),
+    ...arac,
+    kanGrubu: arac.kanGrubu.replace("+", "pozitif").replace("-", "negatif"),
+  };
+  araclar.push(yeniArac);
+  saveAraclar(araclar);
+  return yeniArac;
 };
 
 // Ana sayfa
@@ -49,7 +63,6 @@ app.get("/", (req, res) => {
 // QR kod oluşturma
 app.post("/qrolustur", async (req, res) => {
   try {
-    // Plaka kontrolü
     const mevcutArac = findAracByPlaka(req.body.plaka);
 
     if (mevcutArac) {
@@ -79,67 +92,20 @@ app.get("/bilgi/:id", (req, res) => {
       return res.status(404).send("Araç bulunamadı");
     }
 
-    res.render("bilgi", { bilgiler: arac });
+    const bilgiler = {
+      ...arac,
+      kanGrubu: arac.kanGrubu.replace("pozitif", "+").replace("negatif", "-"),
+    };
+
+    res.render("bilgi", { bilgiler });
   } catch (error) {
     console.error("Bilgi görüntüleme hatası:", error);
     res.status(500).send("Bilgiler görüntülenirken bir hata oluştu");
   }
 });
 
-// Güncelleme işlemleri
-const updateArac = (id, yeniBilgiler) => {
-  try {
-    const index = araclar.findIndex((a) => a.id === id);
-
-    if (index !== -1) {
-      araclar[index] = { ...araclar[index], ...yeniBilgiler };
-      return araclar[index];
-    }
-    return null;
-  } catch (error) {
-    console.error("Güncelleme hatası:", error);
-    throw error;
-  }
-};
-
-// Güncelleme formu sayfası
-app.get("/guncelle/:id", (req, res) => {
-  try {
-    const arac = araclar.find((a) => a.id === req.params.id);
-
-    if (!arac) {
-      return res.status(404).send("Araç bulunamadı");
-    }
-
-    res.render("guncelle", { arac });
-  } catch (error) {
-    res.status(500).send("Bir hata oluştu");
-  }
-});
-
-// Güncelleme işlemi
-app.post("/guncelle/:id", async (req, res) => {
-  try {
-    const guncelArac = updateArac(req.params.id, req.body);
-
-    if (!guncelArac) {
-      return res.status(404).send("Araç bulunamadı");
-    }
-
-    const bilgiURL = `${req.protocol}://${req.get("host")}/bilgi/${
-      guncelArac.id
-    }`;
-    const qrKod = await qr.toDataURL(bilgiURL);
-    res.render("qrkod", { qrKod, mesaj: "Bilgiler başarıyla güncellendi." });
-  } catch (error) {
-    res.status(500).send("Güncelleme sırasında bir hata oluştu");
-  }
-});
-
-// Vercel için module.exports
 module.exports = app;
 
-// Eğer doğrudan çalıştırılıyorsa (development)
 if (require.main === module) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
