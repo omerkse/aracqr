@@ -36,13 +36,19 @@ app.set("views", path.join(__dirname, "..", "views"));
 class DatabaseService {
   // Plaka formatı için yardımcı fonksiyon
   static formatPlaka(plaka) {
-    return plaka.trim().toUpperCase().replace(/\s+/g, " ");
+    return plaka ? plaka.trim().toUpperCase().replace(/\s+/g, " ") : "";
+  }
+
+  // Güvenli trim fonksiyonu
+  static safeTrim(value) {
+    return value ? value.trim() : "";
   }
 
   // Plaka ile araç arama
   static async findAracByPlaka(plaka) {
     try {
       const formattedPlaka = this.formatPlaka(plaka);
+      if (!formattedPlaka) return null;
 
       const { data, error } = await supabase
         .from("araclar")
@@ -74,6 +80,7 @@ class DatabaseService {
         "kanGrubu",
         "acilNumara",
       ];
+
       for (const alan of gerekliAlanlar) {
         if (!aracBilgileri[alan]) {
           throw new Error(`${alan} alanı gereklidir`);
@@ -84,13 +91,13 @@ class DatabaseService {
         .from("araclar")
         .insert({
           plaka: this.formatPlaka(aracBilgileri.plaka),
-          marka: aracBilgileri.marka.trim(),
-          model: aracBilgileri.model.trim(),
-          yil: parseInt(aracBilgileri.yil),
-          sahipAdi: aracBilgileri.sahipAdi.trim(),
-          telefon: aracBilgileri.telefon.trim(),
-          kanGrubu: aracBilgileri.kanGrubu.trim(),
-          acilNumara: aracBilgileri.acilNumara.trim(),
+          marka: this.safeTrim(aracBilgileri.marka),
+          model: this.safeTrim(aracBilgileri.model),
+          yil: parseInt(aracBilgileri.yil) || 0,
+          sahipAdi: this.safeTrim(aracBilgileri.sahipAdi),
+          telefon: this.safeTrim(aracBilgileri.telefon),
+          kanGrubu: this.safeTrim(aracBilgileri.kanGrubu),
+          acilNumara: this.safeTrim(aracBilgileri.acilNumara),
         })
         .select()
         .single();
@@ -123,18 +130,22 @@ class DatabaseService {
   // Araç güncelleme
   static async updateArac(id, aracBilgileri) {
     try {
+      if (!aracBilgileri) throw new Error("Araç bilgileri eksik");
+
+      const updateData = {
+        plaka: this.formatPlaka(aracBilgileri.plaka),
+        marka: this.safeTrim(aracBilgileri.marka),
+        model: this.safeTrim(aracBilgileri.model),
+        yil: parseInt(aracBilgileri.yil) || 0,
+        sahipAdi: this.safeTrim(aracBilgileri.sahipAdi),
+        telefon: this.safeTrim(aracBilgileri.telefon),
+        kanGrubu: this.safeTrim(aracBilgileri.kanGrubu),
+        acilNumara: this.safeTrim(aracBilgileri.acilNumara),
+      };
+
       const { data, error } = await supabase
         .from("araclar")
-        .update({
-          plaka: this.formatPlaka(aracBilgileri.plaka),
-          marka: aracBilgileri.marka.trim(),
-          model: aracBilgileri.model.trim(),
-          yil: parseInt(aracBilgileri.yil),
-          sahipAdi: aracBilgileri.sahipAdi.trim(),
-          telefon: aracBilgileri.telefon.trim(),
-          kanGrubu: aracBilgileri.kanGrubu.trim(),
-          acilNumara: aracBilgileri.acilNumara.trim(),
-        })
+        .update(updateData)
         .eq("id", id)
         .select()
         .single();
@@ -157,6 +168,68 @@ class QRService {
       console.error("QR kod oluşturma hatası:", error);
       throw error;
     }
+  }
+}
+
+// Marka ismini logo dosya adına dönüştüren yardımcı sınıf
+class BrandFormatter {
+  static formatBrandName(brand) {
+    if (!brand) return "default";
+
+    // Marka ismini küçük harfe çevir ve temizle
+    let formattedBrand = brand
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "")
+      .replace(/-/g, "")
+      .replace(/[ıİ]/g, "i")
+      .replace(/[ğĞ]/g, "g")
+      .replace(/[üÜ]/g, "u")
+      .replace(/[şŞ]/g, "s")
+      .replace(/[öÖ]/g, "o")
+      .replace(/[çÇ]/g, "c")
+      .replace(/[âÂ]/g, "a")
+      .replace(/[îİ]/g, "i")
+      .replace(/[ûÛ]/g, "u");
+
+    // Yaygın marka isimleri için eşleştirmeler
+    const brandMappings = {
+      // Ekstra eşleştirmeler
+      bmw: "bmw",
+      bmw: "bmw",
+      mercedes: "mercedes",
+      mercedesbenz: "mercedes",
+      benz: "mercedes",
+      vw: "volkswagen",
+      volkswagen: "volkswagen",
+      citroen: "citroen",
+      peugeot: "peugeot",
+      renault: "renault",
+      audi: "audi",
+      opel: "opel",
+      toyota: "toyota",
+      honda: "honda",
+      nissan: "nissan",
+      fiat: "fiat",
+      hyundai: "hyundai",
+      kia: "kia",
+      ford: "ford",
+      skoda: "skoda",
+      citroen: "citroen",
+      chery: "chery",
+      peugeot: "peugeot",
+      fiat: "fiat",
+      honda: "honda",
+      seat: "seat",
+      dacia: "dacia",
+
+      // Diğer markalar eklenebilir
+    };
+
+    // Eşleştirme sonucunu al
+    const mappedBrand = brandMappings[formattedBrand];
+
+    return mappedBrand || "default";
   }
 }
 
@@ -188,44 +261,36 @@ app.post("/qrolustur", async (req, res) => {
     });
   } catch (error) {
     console.error("QR kod oluşturma hatası:", error);
-    res.render("qrkod", {
-      qrKod: null,
-      mesaj: error.message,
-      hata: true,
-    });
+    res.redirect("/");
   }
 });
 
 app.get("/bilgi/:id", async (req, res) => {
   try {
     const arac = await DatabaseService.getAracById(req.params.id);
+    const markaFormatted = BrandFormatter.formatBrandName(arac.marka);
 
     const bilgiler = {
       ...arac,
+      markaFormatted,
       kanGrubu: arac.kanGrubu.replace("pozitif", "+").replace("negatif", "-"),
     };
-
     res.render("bilgi", { bilgiler });
   } catch (error) {
-    res.status(404).render("error", {
-      mesaj: "Araç bilgileri bulunamadı",
-    });
+    console.error("Bilgi sayfası hatası:", error);
+    res.redirect("/");
   }
 });
 
-// Araç güncelleme sayfası
 app.get("/guncelle/:id", async (req, res) => {
   try {
     const arac = await DatabaseService.getAracById(req.params.id);
     res.render("guncelle", { arac });
   } catch (error) {
-    res.status(404).render("error", {
-      mesaj: "Araç bulunamadı",
-    });
+    res.redirect("/");
   }
 });
 
-// Araç güncelleme işlemi
 app.post("/guncelle/:id", async (req, res) => {
   try {
     const updatedArac = await DatabaseService.updateArac(
@@ -234,18 +299,15 @@ app.post("/guncelle/:id", async (req, res) => {
     );
     res.redirect(`/bilgi/${updatedArac.id}`);
   } catch (error) {
-    res.status(500).render("error", {
-      mesaj: "Güncelleme sırasında bir hata oluştu: " + error.message,
-    });
+    console.error("Güncelleme hatası:", error);
+    res.redirect("/");
   }
 });
 
 // Hata yakalama middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).render("error", {
-    mesaj: "Bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
-  });
+  res.redirect("/");
 });
 
 // Server başlatma

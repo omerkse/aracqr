@@ -69,17 +69,21 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        overflow: hidden; /* Fazlalıkları gizle */
       }
 
       .brand-logo {
         max-width: 100%;
-        height: auto;
-        filter: brightness(0) invert(1);
+        max-height: 100%;
+        object-fit: contain;
         transition: transform 0.3s ease;
       }
 
       .brand-logo:hover {
         transform: scale(1.1);
+      }
+      .invert-logo {
+        filter: brightness(0) invert(1);
       }
 
       .info-card {
@@ -219,10 +223,9 @@
       <div class="info-card glass-effect">
         <div class="car-brand-logo">
           <img
-            src="/car-logos/<%= bilgiler.marka.toLowerCase() %>.png"
+            class="brand-logo <%= bilgiler.markaFormatted === 'citroen' ? 'invert-logo' : '' %>"
+            src="/car-logos/<%= bilgiler.markaFormatted %>.png"
             alt="<%= bilgiler.marka %> Logo"
-            class="brand-logo"
-            onerror="this.src='/car-logos/default.jpeg'"
           />
         </div>
         <h5><i class="fas fa-car-side icon"></i> Araç Bilgileri</h5>

@@ -13,6 +13,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
     <style>
+      /* Önceki stiller aynı kalacak */
       body {
         background-color: #f0f2f5;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -137,6 +138,7 @@
                     type="text"
                     name="plaka"
                     class="form-control"
+                    placeholder="Plaka"
                     value="<%= arac.plaka %>"
                     required
                   />
@@ -150,13 +152,40 @@
                     type="text"
                     name="marka"
                     class="form-control"
+                    placeholder="Marka"
                     value="<%= arac.marka %>"
                     required
                   />
-                  <div id="markaHelp" class="form-text w-100">
-                    Marka, model ve yıl bilgilerini aralarında boşluk bırakarak
-                    yazın (Örn: Citroen C Elysee 2015)
-                  </div>
+                </div>
+
+                <div class="input-group mb-3">
+                  <span class="input-group-text">
+                    <i class="fas fa-car-alt"></i>
+                  </span>
+                  <input
+                    type="text"
+                    name="model"
+                    class="form-control"
+                    placeholder="Model"
+                    value="<%= arac.model %>"
+                    required
+                  />
+                </div>
+
+                <div class="input-group mb-3">
+                  <span class="input-group-text">
+                    <i class="fas fa-calendar-alt"></i>
+                  </span>
+                  <input
+                    type="number"
+                    name="yil"
+                    class="form-control"
+                    placeholder="Model Yılı"
+                    value="<%= arac.yil %>"
+                    min="1900"
+                    max="2024"
+                    required
+                  />
                 </div>
 
                 <div class="section-divider">
@@ -177,6 +206,7 @@
                     type="text"
                     name="sahipAdi"
                     class="form-control"
+                    placeholder="Ad Soyad"
                     value="<%= arac.sahipAdi %>"
                     required
                   />
@@ -190,6 +220,7 @@
                     type="tel"
                     name="telefon"
                     class="form-control"
+                    placeholder="Telefon"
                     value="<%= arac.telefon %>"
                     required
                   />
@@ -213,6 +244,7 @@
                     type="text"
                     name="kanGrubu"
                     class="form-control"
+                    placeholder="Kan Grubu"
                     value="<%= arac.kanGrubu %>"
                     required
                   />
@@ -226,6 +258,7 @@
                     type="tel"
                     name="acilNumara"
                     class="form-control"
+                    placeholder="Acil Durum Telefonu"
                     value="<%= arac.acilNumara %>"
                     required
                   />
