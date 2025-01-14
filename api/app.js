@@ -15,14 +15,9 @@ app.use(
   express.static(path.join(__dirname, "..", "public/images/car-logos"))
 );
 
-// Geçici dosya dizini ve dosya yolu
-const tmpDirPath = path.join(__dirname, "tmp");
-const tmpFilePath = path.join(tmpDirPath, "araclar.json");
-
-// Geçici dosya dizini yoksa oluştur
-if (!fs.existsSync(tmpDirPath)) {
-  fs.mkdirSync(tmpDirPath);
-}
+// Vercel için Geçici dosya dizini ve dosya yolu
+const tmpDirPath = "/tmp"; // Vercel'de yazılabilir alan
+const tmpFilePath = path.join(tmpDirPath, "araclar.json"); // Dosya yolu
 
 // JSON dosyasından araçları yükle
 const loadAraclar = () => {
