@@ -15,20 +15,27 @@ app.use(
   express.static(path.join(__dirname, "..", "public/images/car-logos"))
 );
 
+// Geçici dosya dizini ve dosya yolu
+const tmpDirPath = path.join(__dirname, "tmp");
+const tmpFilePath = path.join(tmpDirPath, "araclar.json");
+
+// Geçici dosya dizini yoksa oluştur
+if (!fs.existsSync(tmpDirPath)) {
+  fs.mkdirSync(tmpDirPath);
+}
+
 // JSON dosyasından araçları yükle
 const loadAraclar = () => {
-  const dosyaYolu = path.join(__dirname, "araclar.json");
-  if (fs.existsSync(dosyaYolu)) {
-    const data = fs.readFileSync(dosyaYolu, "utf8");
+  if (fs.existsSync(tmpFilePath)) {
+    const data = fs.readFileSync(tmpFilePath, "utf8");
     return JSON.parse(data);
   }
-  return [];
+  return []; // Dosya yoksa boş array döndür
 };
 
 // JSON dosyasına araçları kaydet
 const saveAraclar = (data) => {
-  const dosyaYolu = path.join(__dirname, "araclar.json");
-  fs.writeFileSync(dosyaYolu, JSON.stringify(data, null, 4), "utf8");
+  fs.writeFileSync(tmpFilePath, JSON.stringify(data, null, 4), "utf8");
 };
 
 // Araç listesi
