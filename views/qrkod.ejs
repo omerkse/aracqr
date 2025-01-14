@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="tr">
   <head>
     <title>Oluşturulan QR Kod</title>
     <meta charset="UTF-8" />
@@ -14,12 +14,49 @@
       }
       .qr-container {
         background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+      .qr-image-wrapper {
+        background: #fff;
         padding: 20px;
         border-radius: 10px;
-        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        display: inline-block;
+        margin: 20px 0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      }
+      .qr-image {
+        width: 250px;
+        height: 250px;
+        object-fit: contain;
+      }
+      .page-title {
+        color: #2c3e50;
+        font-weight: 600;
+        margin-bottom: 30px;
       }
       .alert {
-        margin-bottom: 20px;
+        border: none;
+        border-radius: 8px;
+      }
+      .btn {
+        padding: 12px 24px;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      .btn-primary {
+        background-color: #4361ee;
+        border: none;
+      }
+      .btn-success {
+        background-color: #2dd4bf;
+        border: none;
       }
     </style>
   </head>
@@ -30,19 +67,24 @@
           <div class="qr-container">
             <% if (mesaj) { %>
             <div
-              class="alert <%= mesaj.includes('zaten') ? 'alert-warning' : 'alert-success' %>"
+              class="alert <%= mesaj.includes('zaten') ? 'alert-warning' : 'alert-success' %> alert-dismissible fade show"
             >
               <%= mesaj %>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+              ></button>
             </div>
             <% } %>
 
-            <h2 class="mb-4">QR Kod</h2>
-            <div class="mb-4">
-              <img src="<%= qrKod %>" alt="QR Kod" style="max-width: 300px" />
+            <h2 class="page-title">QR Kod</h2>
+            <div class="qr-image-wrapper">
+              <img src="<%= qrKod %>" alt="QR Kod" class="qr-image" />
             </div>
-            <div class="d-grid gap-2">
-              <a href="/" class="btn btn-primary">Yeni QR Kod Oluştur</a>
-              <!-- QR kodu indirmek için yeni buton -->
+            <div class="d-grid gap-3">
+              <a href="/" class="btn btn-primary"> Yeni QR Kod Oluştur </a>
               <a
                 href="<%= qrKod %>"
                 download="qr_kod.png"
@@ -55,5 +97,6 @@
         </div>
       </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>
